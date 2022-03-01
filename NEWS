@@ -1,0 +1,40 @@
+
+#Todo:
+ - Make sure that a related unknown is positioned last and change warning message to
+ "Since fst>0, we highly recommend that only the last unknown is specified as a related".
+- A warning message is given when specifying relationships when fst>0:	
+
+#v1.0.0:
+ - Release version (used in publication)
+ - Fixed GUI issue when number of related + references exceeds the number of contibutors.
+
+#v0.7:
+ - Fixed GUI issue when number of condtional references exceeds the number of contibutors.
+ - All references forwarded to model specification are counted as typed individuals (same as from EFM v3.4.x).
+
+#v0.6:
+ - Changing package name from EFMreps to EFMrep
+ - Updated calcloglik_cumprob:L242 to change lower integration term ('AT-1' instead of 'AT') , fixes issue of observation on AT .
+ - Fixed bug in efm2:L698 (getRepGrpID helpfunction); the evidence name when extracted from GUItable was splitted if it contains white space (this is now avoided).
+ - Fixed bug in contLikMLE2:L301, where FW stutter param was not properly proposed
+ - In fitgammamodel2: Make pre-fitting more robust for highly degraded samples (zero-obs exchanged with smallest obs/2).
+ - Found bug in prepareC2:L246 causing a negative stutter from-index for marker dropout.
+ - prepareData2 function now throws an error if one of the frequencies become negative (may happen for the Q-allele).
+ - Fixed small bug in GUI when configurating evidence specific models: Store only global settings to file (Global settings after Evid settings).
+ 
+#v0.5:
+ - Include Rmath instead of using BH::Boost
+
+#v0.4: Implements relatedness
+ - Including tests
+ - Create vertical scroll for replicates at data import (issue for screens with low resolution).
+
+#v0.3: Small changes:
+ - Fixed bug when showing no references.
+ - Fixed bug when showing PCA and all replicates is missing the marker.
+
+#v0.2: User-improvements:
+- Global settings and selected population freq file is stored and remembered.
+- All calculations/results are stored throughout the session (before using REFRESH) and can be highligheted at any time (useful for model comparison).
+
+#v0.1: Initiated development version of EFMreps

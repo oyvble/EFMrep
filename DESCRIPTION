@@ -1,0 +1,18 @@
+Package: EFMrep
+Type: Package
+Title: A Quantitative Model for Interpreting Replicated DNA Mixtures
+Version: 1.0.0
+Date: 2022-02-22
+Author: Oyvind Bleka <oyvble@hotmail.com>
+Maintainer: Oyvind Bleka <oyvble@hotmail.com>
+Description: Contains procedures for maximization of likelihoods of a quantitative model for DNA mixtures (STR) for a general specifications of hypotheses. It also contains procedures for estimating the profiles of unknown contributors (deconvolution). The implemented model takes care of drop-out, drop-in, degradation and stutters (both backward and forward).
+NeedsCompilation: yes 
+License: GPL(>=2)
+Depends: R (>= 3.0.1)
+Imports: euroformix
+Suggests: 
+	gWidgets2,
+	plotly,
+	mclust, 
+	mixtools
+RoxygenNote: 6.1.1
