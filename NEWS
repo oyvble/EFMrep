@@ -1,8 +1,19 @@
 
 #Todo:
- - Make sure that a related unknown is positioned last and change warning message to
+- Make sure that a related unknown is positioned last and change warning message to
  "Since fst>0, we highly recommend that only the last unknown is specified as a related".
 - A warning message is given when specifying relationships when fst>0:	
+- Include the separate function getUpperLR for providing the theoretical maximum LR obtainable.
+
+Crucial:
+- FIX bug causing Hp to be run for deconvolution only analyses.
+
+#v1.0.1: (21.06.22)
+ - Fixed bug when creating report: updating getReportText file.
+ - Included test "test_logLik1pRepsExtendedError": Expect an error only if a sample contains more markers than specified in a kit (must exist in frequency data).
+ - The number of threads is set to zero by default (meaning using all available).
+ - OPENMP is optional: Makevars.win and *.cpp scripts were modified.
+ - Added license file: GNU Lesser General Public License v3.0
 
 #v1.0.0:
  - Release version (used in publication)

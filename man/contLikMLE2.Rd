@@ -10,7 +10,7 @@ contLikMLE2(nC, samples, popFreq, refData = NULL, condOrder = NULL,
   PHvar = 1:length(samples), DEG = rep(0, length(samples)),
   stuttBW = rep(0, length(samples)), stuttFW = rep(0, length(samples)),
   minF = NULL, normalize = FALSE, maxIter = 100, steptol = 1e-06,
-  nDone = 3, maxThreads = 128, delta = 1, seed = NULL,
+  nDone = 3, maxThreads = 0, delta = 1, seed = NULL,
   verbose = TRUE, knownRel = NULL, ibd = NULL)
 }
 \arguments{

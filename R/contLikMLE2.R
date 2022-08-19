@@ -38,7 +38,7 @@
 contLikMLE2 = function(nC,samples,popFreq,refData=NULL, condOrder=NULL,knownRef = NULL, kit=NULL, AT=50,pC=0.05,lambda=0.01,fst=0, 
                        mixProp=1:length(samples), PHexp=1:length(samples), PHvar=1:length(samples), DEG=rep(0,length(samples)), 
                        stuttBW=rep(0,length(samples)), stuttFW=rep(0,length(samples)), minF=NULL, normalize=FALSE,
-                       maxIter=100, steptol=1e-6, nDone=3, maxThreads=128, delta=1, seed=NULL,verbose=TRUE,
+                       maxIter=100, steptol=1e-6, nDone=3, maxThreads=0, delta=1, seed=NULL,verbose=TRUE,
                        knownRel=NULL, ibd=NULL) {
 
   if(!is.null(seed)) set.seed(seed)

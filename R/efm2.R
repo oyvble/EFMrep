@@ -32,7 +32,7 @@ efm2 = function(envirfile=NULL,envir=NULL) {
   optList = list(
     optSetup =  list(AT=50,pC=0.05,lambda=0.01,fst=0), #default global settings
     optFreq =list(freqsize=0,minF=0,normalize=1), #option when new frequencies are found (size of imported database,minFreq), and missmatch options
-    optMLE = list(nDone=3,delta=1,maxIter=100,maxThreads=128,seed=0,steptol=1e-3,equaltol=0.01), #options when optimizing,validation (nDone,delta)
+    optMLE = list(nDone=3,delta=1,maxIter=100,maxThreads=0,seed=0,steptol=1e-3,equaltol=0.01), #options when optimizing,validation (nDone,delta)
     optDC = list(alphaprob=0.99,maxlist=20), #options when doing deconvolution
     optFreqfile =  NULL #default frequency file 
   )  

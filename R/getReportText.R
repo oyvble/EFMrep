@@ -68,7 +68,7 @@ getReportText = function(set, envir,sig=2,colps="\t") {
     return(txt)
   }
   
-  txt <- paste0("EFMreps version ",packageVersion("EFMreps"))
+  txt <- paste0("EFMrep version ",packageVersion("EFMrep"))
   txt <- paste0(txt,"\nR-version: ",R.version.string) #Add R-version used
   txt <- paste0(txt,"\nCreated: ",Sys.time())
   txt <- paste0(txt,"\nUser: ",Sys.getenv("USERNAME"),"\n")

@@ -12,9 +12,11 @@
 #include <vector> //vector storage
 #include <cmath> //includes lgamma
 #include <thread> //used to obtain number of logical processes
-#include <omp.h> //parallelization
 #include <Rmath.h> //includes pgamma
 #include "genoProbFuns.h" //helpfunction for genotype probs
+#ifdef _OPENMP
+#include <omp.h> //parallelization
+#endif
 
 using namespace std;
 
@@ -30,12 +32,14 @@ void loglikGamma_allcomb2( double *loglikVEC, int *nJointCombs, int *NOC, int *N
 	double *peaksLong, double *freqsLong, double *nTypedLong, double *maTypedLong, double *basepairLong,  int *repIDvec, int *startIndMarker_nRepMarkers,
 	int *nGenos, int *outG1allele, int *outG1contr, int *startIndMarker_outG1allele, int *startIndMarker_outG1contr,  int *startIndMarker_nJointCombs,
 	int *nStutters, int *stuttFromIndVEC, int *stuttToIndVEC, int *stuttParamIndVEC, int *startIndMarker_nStutters, 	
-	int *knownGind, int *maxThreads, int *relGind, double *ibdLong) {
+	int *knownGind, int *maxThreads, int *relGind, double *ibdLong) {	
 	
-	
+	#ifdef _OPENMP
 	int numThreads = thread::hardware_concurrency();
 	int useThreads = min(numThreads,*maxThreads);
+	if(*maxThreads==0) useThreads=numThreads; //use all available threads
 	omp_set_num_threads(useThreads);  //set number of threads to use 
+	#endif
 	
 	int aa, kk, rr; //indices for alleles, contributors and replicates
 	//Prepare transformation of parameters (per replicate) to save computation:

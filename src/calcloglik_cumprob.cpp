@@ -12,9 +12,11 @@
 #include <vector> //vector storage
 #include <cmath> //includes lgamma
 #include <thread> //used to obtain number of logical processes
-#include <omp.h> //parallelization
 #include <Rmath.h> //includes pgamma
 #include "genoProbFuns.h" //helpfunction for genotype probs
+#ifdef _OPENMP
+#include <omp.h> //parallelization
+#endif
 
 using namespace std;
 
@@ -32,11 +34,13 @@ void loglikGamma_cumprob(double *pvalVEC, double *maxY, int *nJointCombs, int *N
 	int *nStutters, int *stuttFromIndVEC, int *stuttToIndVEC, int *stuttParamIndVEC, int *startIndMarker_nStutters, 	
 	int *knownGind, int *maxThreads, int *relGind, double *ibdLong) {
 	
-	
+	#ifdef _OPENMP
 	int numThreads = thread::hardware_concurrency();
 	int useThreads = min(numThreads,*maxThreads);
+	if(*maxThreads==0) useThreads=numThreads; //use all available threads
 	omp_set_num_threads(useThreads);  //set number of threads to use 
-	
+	#endif
+		
 	int aa, kk, rr; //indices for alleles, contributors and replicates
 	//Prepare transformation of parameters (per replicate) to save computation:
 	vector<double> PHvarSq(*nReps,0.0);
