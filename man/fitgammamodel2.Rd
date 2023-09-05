@@ -4,8 +4,17 @@
 \alias{fitgammamodel2}
 \title{fitgammamodel2}
 \usage{
-fitgammamodel2(y, x = NULL, niter = 10, delta = 1, plott = FALSE,
-  alpha = 0.05, offset = 125, scale = 100, restrictDeg = FALSE)
+fitgammamodel2(
+  y,
+  x = NULL,
+  niter = 10,
+  delta = 1,
+  plott = FALSE,
+  alpha = 0.05,
+  offset = 125,
+  scale = 100,
+  restrictDeg = FALSE
+)
 }
 \arguments{
 \item{y}{Vector with sum peak heights (per loci)}

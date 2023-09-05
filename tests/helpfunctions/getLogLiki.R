@@ -48,7 +48,7 @@ getLogLiki = function(samples,refData,popFreq,condOrder,knownRef,par,NOC,ATv,pCv
     
     nAG0 = nAG #temporary store
     if(nU>0) {
-      refK = unlist(datloc$refs[c(which(condOrder>0),knownRef)]) #obtain references
+      refK = datloc$refs[ unique(c(which(condOrder>0),knownRef,knownRel))] #obtain references
       refRlist = NULL
       if(!is.null(knownRel)) refRlist = datloc$refs[knownRel] #obtain references to consider
       

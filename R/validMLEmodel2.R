@@ -157,7 +157,7 @@ validMLEmodel2 <- function(mlefit,plottitle="PP-plot",alpha=0.01,createplot=TRUE
       subDat = tab[ind,]
       locind = match(subDat$Marker,locNames) #obtain loci to plot
       
-      points( rep(rind/(length(repNames)+1),sum(ind)), subDat$cumProb ,pch=(locind-1)%%pchmax,col=cols[rind],cex=sz)
+      points( rep(rind/(length(repNames)+1),sum(ind)), subDat$cumProb ,pch=1,col=cols[rind],cex=sz) #(locind-1)%%pchmax
     }
     rect(0,0,1,1)
     
@@ -181,7 +181,7 @@ validMLEmodel2 <- function(mlefit,plottitle="PP-plot",alpha=0.01,createplot=TRUE
     #  abline(0,1)
     locind = match(tab$Marker,locNames) #obtain loci to plot
     repind = match(tab$Replicate,repNames) #get replicate indices
-    points(cumunif,tab$cumProb[ord],pch=(locind[ord]-1)%%pchmax,cex=sz,col=cols[repind[ord]])
+    points(cumunif,tab$cumProb[ord],pch=1,cex=sz,col=cols[repind[ord]]) #(locind[ord]-1)%%pchmax
     
     legend("topleft",legend=repNames,pch=19,cex=sz,col=cols[1:length(repNames)])
     dev.new()

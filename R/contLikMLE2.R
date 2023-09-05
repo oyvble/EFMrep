@@ -21,7 +21,7 @@
 #' @param stuttFW Forward stutter params: Indicate which shared parameter group each samples belongs to
 #' @param minF The freq value included for new alleles (new alleles as potential stutters will have 0). Default NULL is using min.observed in popFreq.
 #' @param normalize A boolean of whether normalization should be applied or not. Default is FALSE.
-#' @param maxIter Maximum number of iterations for the optimization. Default is 100.
+#' @param difftol Tolerance for being exact in log-likelihood value (relevant when nDone>1)
 #' @param steptol Argument used in the nlm function for faster return from the optimization (tradeoff is lower accuracy).
 #' @param nDone Number of optimizations required providing equivalent results (same logLik value obtained)
 #' @param maxThreads Maximum number of threads to be executed by the parallelization
@@ -34,13 +34,13 @@
 #' @export
 
 #Function fit MLE for replicates
-#maxIter=1000;steptol=1e-6; nDone=3; maxThreads=128; delta=1; verbose=TRUE; seed=1;knownRel=NULL;ibd=NULL;#minF=NULL;normalize=FALSE
+#steptol=1e-6; nDone=3; maxThreads=128; delta=1; verbose=TRUE; seed=1;knownRel=NULL;ibd=NULL;#minF=NULL;normalize=FALSE
 contLikMLE2 = function(nC,samples,popFreq,refData=NULL, condOrder=NULL,knownRef = NULL, kit=NULL, AT=50,pC=0.05,lambda=0.01,fst=0, 
                        mixProp=1:length(samples), PHexp=1:length(samples), PHvar=1:length(samples), DEG=rep(0,length(samples)), 
                        stuttBW=rep(0,length(samples)), stuttFW=rep(0,length(samples)), minF=NULL, normalize=FALSE,
-                       maxIter=100, steptol=1e-6, nDone=3, maxThreads=0, delta=1, seed=NULL,verbose=TRUE,
+                       difftol=0.01, steptol=1e-6, nDone=3, maxThreads=0, delta=1, seed=NULL,verbose=TRUE,
                        knownRel=NULL, ibd=NULL) {
-
+  start_time <- Sys.time()
   if(!is.null(seed)) set.seed(seed)
   if( any(DEG>0) && length(DEG)!=length(kit)) stop("Length of kit argument must be same as length of DEG")
   if(nC < sum(condOrder>0)) stop("Number of contributors can't be specified less than number of conditional references.")
@@ -70,14 +70,11 @@ contLikMLE2 = function(nC,samples,popFreq,refData=NULL, condOrder=NULL,knownRef 
   
   repNames=names(samples) #obtain replicate names (this is the index order for model params)
   nReps = length(repNames)
+  
   #Prepare data for C-object:
 # incBS=any(stuttBW>0);incFS= any(stuttFW>0)
   c <- prepareC2(dat, repNames, nC, condOrder,knownRef,kit,AT,pC,lambda,fst,incBS=any(stuttBW>0), incFS= any(stuttFW>0),knownRel=knownRel, ibd=ibd)
-  c$freq
-#c$locNames
-#c$stuttParamInd
-#c$startIndMarker_nAlleles
-#c$startIndMarker_nAllelesReps
+  
   #Prefitting data based on the model for sum of the peak heights  to find proper startvalues for MLE 
   nLocs = c$nLocs #number of markers
   sumY <- meanbp <- matrix(NA,nrow=nReps,ncol=nLocs) #sum PH, bp per marker per replicates
@@ -200,10 +197,14 @@ contLikMLE2 = function(nC,samples,popFreq,refData=NULL, condOrder=NULL,knownRef 
     return( list(mixProp=par_mixProp, PHexp=par_PHexp, PHvar=par_PHvar, DEG=par_DEG, stutt=par_stutt) )
   }
   
-  
+  secondToTimeformat <- function(t){ #converts seconds to time format
+    paste(formatC(t %/% (60*60) %% 24, width = 2, format = "d", flag = "0"), #hours
+          formatC(t %/% 60 %% 60, width = 2, format = "d", flag = "0"), #mins
+          formatC(t %% 60, width = 2, format = "d", flag = "0"),sep = ":") #seconds
+  }
   
   #function for calling on C-function: Must convert "real domain" values back to model params 
-  negloglik_phi <- function(phi) { #assumed order: mixprop(1:C-1),mu,sigma,beta,xi
+  negloglik_phi <- function(phi,progressbar=TRUE) { #assumed order: mixprop(1:C-1),mu,sigma,beta,xi
     
     par = convParamBack(phi) #obtain list with parameters (on original scale)
     
@@ -255,30 +256,33 @@ contLikMLE2 = function(nC,samples,popFreq,refData=NULL, condOrder=NULL,knownRef 
     #Relatedness
     #as.integer(c$relGind) #genotype of related reference
     #as.integer(c$ibdLong) #relatedness definition of each contributors (also known)
-    
-    calc = .C("loglikGamma_allcomb1",as.numeric(0), c$nJointCombs, c$NOC, c$NOK,
+    loglik = .C("loglikGamma_allcomb1",as.numeric(0), c$nJointCombs, c$NOC, c$NOK,
               as.numeric(par$mixProp),  as.numeric(par$PHexp), as.numeric(par$PHvar), as.numeric(par$DEG), as.numeric(par$stutt), 
               as.numeric(c$AT),as.numeric(c$fst),as.numeric(c$dropinProb),as.numeric(c$dropinWeight),
               c$nReps, c$nLocs, c$nRepMarkers, c$nAlleles, c$nAlleles2, c$startIndMarker_nAlleles, c$startIndMarker_nAllelesReps,
               c$peakHeights, c$freq, c$nTyped, c$maTyped, c$basepairs, c$repID, c$startIndMarker_nRepMarkers, 
               c$nGenos, c$outG1allele, c$outG1contr, c$startIndMarker_outG1allele, c$startIndMarker_outG1contr, c$startIndMarker_nJointCombs,
               c$nStutters, c$stuttFromInd, c$stuttToInd, c$stuttParamInd , c$startIndMarker_nStutters,
-              c$knownGind, as.integer(maxThreads), c$relGind, c$ibdLong  ) 
+              c$knownGind, as.integer(maxThreads), c$relGind, c$ibdLong  )[[1]]   #obtain log-likelihood value
     
-    loglik = calc[[1]] #obtain log-likelihood value
+    #IF priors are defined:
     #if(is.null(xi))  loglik <- loglik + log(pXi(xiB)) #weight with prior of xi
     #if(is.null(xiFW))  loglik <- loglik + log(pXiFW(xiF)) #weight with prior of xiFW
+    progcount <<- progcount + 1 #update counter
+    if(verbose && progressbar) setTxtProgressBar(progbar,progcount)  #only show progressbar if verbose(and if decided to show)
     return(-loglik) #weight with prior of stutter.
   }
   
   #PERFORM OPTIMIZATION:
   nparam = max(mixProp)*(nC-1) + max(PHexp) + max(PHvar) + max(DEG) + max(stuttBW) + max(stuttFW) #Obtain number of parameters (over all replicates)
-  nOK <- 0 #number of times for reaching largest previously seen optimum
   maxL <- -Inf #value of maximum obtained loglik
-  maxITERS <- maxIter #100 #number of possible times to be INF or not valid optimum before any acceptance
-  nITER <- 0 #number of times beeing INF (invalid value)
+  nITERinf <- 0 #number of times beeing INF (invalid value)
+  maxIterProgress = (nparam-2)*100 #maximum iterations in progressbar
+  nEvals = 0 #number of total evaluations (calls to likelihood function)
+  nOK <- 0 #number of times for reaching largest previously seen optimum
   
-  logLik_tolerance = 0.01 #tolerance of accepting similar liklihood optimization
+  maxIterINF = 50 #number of trials with inf before giving up (not converging)
+  logLik_tolerance = difftol #tolerance of accepting similar liklihood optimization
   if(verbose) print(paste0("Number of parameters to optimize: ",nparam))
   suppressWarnings({
   while(nOK<nDone) {
@@ -317,17 +321,33 @@ contLikMLE2 = function(nC,samples,popFreq,refData=NULL, condOrder=NULL,knownRef 
     if(length(phi0)!=nparam) stop("The number of proposed params was not correct!") #check only
     
     # phi=phi0
+    progcount  = 1 #progress counter for optimization (reset for each sucessful optimization)
     timeOneCall = system.time({ #estimate the time for calling the likelihood function one time 
-      likval <- -negloglik_phi(phi=phi0)   #check if start value was accepted
+      likval <- -negloglik_phi(phi=phi0, FALSE)   #check if start value was accepted
     })[3] #obtain time in seconds
     
     if( is.infinite(likval) ) { #if it was infinite (invalid)
-      nITER = nITER + 1	 
+      nITERinf = nITERinf + 1	 
       
     } else { #PERFORM OPTIMIZATION
       
+      if(verbose) {
+        showProgressBar = FALSE #show progress bar only if calculatations take more than 10 seconds
+        expectedTimeProgress0 = timeOneCall*maxIterProgress
+        if(expectedTimeProgress0 > 10) showProgressBar = TRUE #show progress if upper time >10s
+        if(showProgressBar) {
+          expectedTimeProgress = secondToTimeformat(expectedTimeProgress0)
+          cat(paste0("\nExpected upper time limit is ", expectedTimeProgress, " (HH:MM:SS)\n")) 
+          #\n---------------------------------------------------
+        }
+      }
+      if(verbose && showProgressBar) progbar <- txtProgressBar(min = 0, max = maxIterProgress, style = 3) #create progress bar
+      
+      
       tryCatch( {
-        foo <- nlm(f=negloglik_phi, p=phi0, iterlim=1000,steptol=steptol, hessian=TRUE)#,print.level=2)
+        foo <- nlm(f=negloglik_phi, p=phi0, iterlim=1000,steptol=steptol, hessian=TRUE, progressbar=showProgressBar)#,print.level=2)
+        nEvals = progcount + nEvals #update the number of evaluations (from progress)
+        
         Sigma <- solve(foo$hessian)
         
         if(all(diag(Sigma)>=0) && foo$iterations>2) { #} && foo$code%in%c(1,2)) { #REQUIREMENT FOR BEING ACCEPTED
@@ -346,20 +366,27 @@ contLikMLE2 = function(nC,samples,popFreq,refData=NULL, condOrder=NULL,knownRef 
               maxL <- likval #maximized likelihood
               maxPhi <- foo$est #set as topfoo     
               maxSigma <- Sigma 
-              if(verbose) print(paste0("New maximum at loglik=",likval))
+              if(verbose) {
+                if(showProgressBar)  cat("\n") #skip line
+                print(paste0("New maximum at loglik=",likval))
+              }
             } else {
-              if(verbose)  print(paste0("Local (non-global) maximum found at logLik=",likval))
+              if(verbose)  {
+                if(showProgressBar)  cat("\n") #skip line
+                print(paste0("Local (non-global) maximum found at logLik=",likval))
+              }
             }
           } 
           if(verbose) print(paste0(" (",nOK,"/",nDone,") optimizations done"))
           #flush.console()
         } else { #NOT ACCEPTED
-          nITER <- nITER + 1 
+          nITERinf <- nITERinf + 1 
         }
-      },error=function(e) e,finally = {nITER <- nITER + 1} ) #end trycatch (update counter)
+      },error=function(e) e,finally = {nITERinf <- nITERinf + 1} ) #end trycatch (update counter)
+      if(verbose && showProgressBar)  cat("\n") #ensure skipping line after computations
     } #end if else 
     
-    if(nOK==0 && nITER>maxITERS) {
+    if(nOK==0 && nITERinf>maxIterINF) {
       nOK <- nDone #finish loop
       maxL <- -Inf #maximized likelihood
       maxPhi <- rep(NA,nparam) #Set as NA
@@ -396,8 +423,9 @@ contLikMLE2 = function(nC,samples,popFreq,refData=NULL, condOrder=NULL,knownRef 
   ret$prepareC = c
   
   #Post-calculations:
+  if(verbose) print("Calculating marker specific likelihood values...")
   ret$logLiki = logLiki2(mlefit=ret) #calculate marker-specific results 
-  
+  ret$time = ceiling(as.numeric(Sys.time() - start_time, units="secs")) #obtain time usage in seconds
   return( ret )
   
 } #end function

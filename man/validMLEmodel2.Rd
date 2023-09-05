@@ -4,8 +4,13 @@
 \alias{validMLEmodel2}
 \title{validMLEmodel2}
 \usage{
-validMLEmodel2(mlefit, plottitle = "PP-plot", alpha = 0.01,
-  createplot = TRUE, verbose = TRUE)
+validMLEmodel2(
+  mlefit,
+  plottitle = "PP-plot",
+  alpha = 0.01,
+  createplot = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{mlefit}{Fitted object using contLikMLE}

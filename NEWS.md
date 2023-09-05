@@ -3,10 +3,21 @@
 - Make sure that a related unknown is positioned last and change warning message to
  "Since fst>0, we highly recommend that only the last unknown is specified as a related".
 - A warning message is given when specifying relationships when fst>0:	
-- Include the separate function getUpperLR for providing the theoretical maximum LR obtainable.
+- Include a separate function getUpperLR for providing the theoretical maximum LR obtainable.
 
-Crucial:
-- FIX bug causing Hp to be run for deconvolution only analyses.
+NEEDED: Print defined relationships for the unknowns into the report
+
+#v1.1.0: (22.11.07)
+- Added possibility to export DC profile to Deconvolution panel.
+- Added progress-bar with a expected upper time limit for MLE optimizing (similar as EuroForMix).
+- GUI windows provided to show different results (param, logLik, LR per marker).
+- Model validation is no longer excecuted when creating report (instead it is stored after each user calculation).
+- Now only "normal points" are shown in the model validation figure.
+- Including "Related reference" to number of typed alleles (may affect testing).
+
+- Bug fixes (thanks to Sandor Furedi for finding these issues):
+- Fixed bug when creating report: getReportText-L77: Wrong environment variable "Freqfile" used (should be "optFreqfile"). 
+- Fixed bug causing Hp to be also be run for deconvolution when no references are conditioned on.
 
 #v1.0.1: (21.06.22)
  - Fixed bug when creating report: updating getReportText file.

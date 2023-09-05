@@ -4,8 +4,7 @@
 \alias{getPCAclusters}
 \title{getPCAclusters}
 \usage{
-getPCAclusters(X, grps = NULL, txt = "", getClusters = TRUE,
-  alpha = 0.1)
+getPCAclusters(X, grps = NULL, txt = "", getClusters = TRUE, alpha = 0.1)
 }
 \arguments{
 \item{X}{summed PH per marker per sample}

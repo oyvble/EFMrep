@@ -1,6 +1,9 @@
 
 #HELPFUNCTION TO TEST FUNCTIONS (ONLY CHANGED HYPOTHESIS)
 #knownRef=NULL;knownRel=NULL;ibd=NULL
+
+compareValid = function(x,y,s0=3)  expect(sort(round(x,s0)),sort(y))
+
 testFuns = function(condOrder, knownRef=NULL,knownRel=NULL,ibd=NULL,compareEFM=FALSE,steptol0=1e-3,nDone0=1,seed0=1 ) {
 
   expect_approx = function(x,y,tol=1e-8) { #helpfunction with specified tolerance

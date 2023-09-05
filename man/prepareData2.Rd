@@ -4,9 +4,17 @@
 \alias{prepareData2}
 \title{prepareData2}
 \usage{
-prepareData2(samples, refData = NULL, popFreq = NULL, minF = NULL,
-  normalize = FALSE, AT = NULL, fillHomGen = TRUE, verbose = FALSE,
-  doQ = TRUE)
+prepareData2(
+  samples,
+  refData = NULL,
+  popFreq = NULL,
+  minF = NULL,
+  normalize = FALSE,
+  AT = NULL,
+  fillHomGen = TRUE,
+  verbose = FALSE,
+  doQ = TRUE
+)
 }
 \arguments{
 \item{samples}{A list with evidence profiles [[sample]][[locus]]$adata/hdata}

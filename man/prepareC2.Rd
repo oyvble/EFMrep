@@ -4,9 +4,22 @@
 \alias{prepareC2}
 \title{prepareC2}
 \usage{
-prepareC2(dat, repNames, nC, condOrder = NULL, knownRef = NULL,
-  kit = NULL, AT = 50, pC = 0.05, lambda = 0.01, fst = 0,
-  incBS = FALSE, incFS = FALSE, knownRel = NULL, ibd = NULL)
+prepareC2(
+  dat,
+  repNames,
+  nC,
+  condOrder = NULL,
+  knownRef = NULL,
+  kit = NULL,
+  AT = 50,
+  pC = 0.05,
+  lambda = 0.01,
+  fst = 0,
+  incBS = FALSE,
+  incFS = FALSE,
+  knownRel = NULL,
+  ibd = NULL
+)
 }
 \arguments{
 \item{dat}{A list which contains the output from function prepareData2 (samples,refs,freq)}

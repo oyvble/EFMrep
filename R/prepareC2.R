@@ -280,7 +280,7 @@ prepareC2 = function(dat,repNames,nC,condOrder=NULL,knownRef=NULL,kit=NULL,AT=50
    #Get number of typed allelse (must count alleles)
    tmp <- rep(0, length(allelesALL))
    if(!is.null(dat[[loc]]$refs)) {
-      typedRefs = unique( c(which(condOrder>0),knownRef) )#,knownRel) ) #get unique referneces
+      typedRefs = unique( c(which(condOrder>0),knownRef, knownRel) ) #get unique referneces
       for(k in typedRefs) { #for each typed refs
          ind <- which( allelesALL%in%dat[[loc]]$refs[[k]] )
          tmp[ind] = tmp[ind] + (length(ind)==1) + 1 #add twice sampled if homozygote 

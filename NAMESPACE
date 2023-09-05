@@ -1,7 +1,7 @@
 importFrom("euroformix", "getKit", "tableReader","freqImport","calcGjoint", "sample_tableToList", "plotEPG2","plotMPS2")
 importFrom("graphics", "abline", "hist", "legend", "lines", "par", "mtext", "points", "text","layout", "rect", "segments")
 importFrom("stats", "dgamma", "na.omit", "nlm", "qgamma", "rgamma","rnorm", "sd", "setNames","aggregate", "prcomp", "predict","pbeta", "pexp", "qbeta","coef","lm")
-importFrom("utils", "object.size", "packageVersion", "write.table")
+importFrom("utils", "object.size", "packageVersion", "write.table", "setTxtProgressBar", "txtProgressBar")
 importFrom("grDevices", "dev.new", "dev.off")
 useDynLib(EFMrep)
 exportPattern("^[[:alpha:]]+")

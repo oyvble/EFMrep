@@ -4,14 +4,36 @@
 \alias{contLikMLE2}
 \title{contLikMLE2}
 \usage{
-contLikMLE2(nC, samples, popFreq, refData = NULL, condOrder = NULL,
-  knownRef = NULL, kit = NULL, AT = 50, pC = 0.05, lambda = 0.01,
-  fst = 0, mixProp = 1:length(samples), PHexp = 1:length(samples),
-  PHvar = 1:length(samples), DEG = rep(0, length(samples)),
-  stuttBW = rep(0, length(samples)), stuttFW = rep(0, length(samples)),
-  minF = NULL, normalize = FALSE, maxIter = 100, steptol = 1e-06,
-  nDone = 3, maxThreads = 0, delta = 1, seed = NULL,
-  verbose = TRUE, knownRel = NULL, ibd = NULL)
+contLikMLE2(
+  nC,
+  samples,
+  popFreq,
+  refData = NULL,
+  condOrder = NULL,
+  knownRef = NULL,
+  kit = NULL,
+  AT = 50,
+  pC = 0.05,
+  lambda = 0.01,
+  fst = 0,
+  mixProp = 1:length(samples),
+  PHexp = 1:length(samples),
+  PHvar = 1:length(samples),
+  DEG = rep(0, length(samples)),
+  stuttBW = rep(0, length(samples)),
+  stuttFW = rep(0, length(samples)),
+  minF = NULL,
+  normalize = FALSE,
+  difftol = 0.01,
+  steptol = 1e-06,
+  nDone = 3,
+  maxThreads = 0,
+  delta = 1,
+  seed = NULL,
+  verbose = TRUE,
+  knownRel = NULL,
+  ibd = NULL
+)
 }
 \arguments{
 \item{nC}{Number of contributors in model}
@@ -52,7 +74,7 @@ contLikMLE2(nC, samples, popFreq, refData = NULL, condOrder = NULL,
 
 \item{normalize}{A boolean of whether normalization should be applied or not. Default is FALSE.}
 
-\item{maxIter}{Maximum number of iterations for the optimization. Default is 100.}
+\item{difftol}{Tolerance for being exact in log-likelihood value (relevant when nDone>1)}
 
 \item{steptol}{Argument used in the nlm function for faster return from the optimization (tradeoff is lower accuracy).}
 

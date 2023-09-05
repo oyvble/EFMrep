@@ -5,6 +5,8 @@
 #' @param envir A environment object
 #' @export
 
+#library(EFMrep);envir=NULL;envirfile=NULL
+#efm2(envirfile)
 efm2 = function(envirfile=NULL,envir=NULL) {
   require(euroformix)
   #size of main window
@@ -32,7 +34,7 @@ efm2 = function(envirfile=NULL,envir=NULL) {
   optList = list(
     optSetup =  list(AT=50,pC=0.05,lambda=0.01,fst=0), #default global settings
     optFreq =list(freqsize=0,minF=0,normalize=1), #option when new frequencies are found (size of imported database,minFreq), and missmatch options
-    optMLE = list(nDone=3,delta=1,maxIter=100,maxThreads=0,seed=0,steptol=1e-3,equaltol=0.01), #options when optimizing,validation (nDone,delta)
+    optMLE = list(nDone=3,delta=1,difftol=0.01,maxThreads=0,seed=0,steptol=1e-3,equaltol=0.01), #options when optimizing,validation (nDone,delta)
     optDC = list(alphaprob=0.99,maxlist=20), #options when doing deconvolution
     optFreqfile =  NULL #default frequency file 
   )  
@@ -67,6 +69,15 @@ efm2 = function(envirfile=NULL,envir=NULL) {
     mmTK = envir #use environment direclty
   } else if(!is.null(envirfile)) {
     load(envirfile) #loading environment
+    
+    #NEED TO ADJUST loglik tolerance here
+    opt = get("optMLE",envir=mmTK) #not used in program (yet)
+    if(!is.null(opt$maxIter)) {
+      idx = which(names(opt)=="maxIter")
+      opt[idx] = 0.01
+      names(opt)[idx] = "difftol"
+    }
+    assign("optMLE",opt,envir=mmTK) #store again
   } else {
     mmTK = new.env( parent = globalenv() ) #create new envornment object (must be empty)
   
@@ -167,7 +178,7 @@ efm2 = function(envirfile=NULL,envir=NULL) {
     if(length(tabfile)==0) return()
      if(length(unlist(strsplit(tabfile,"\\.")))==1) tabfile = paste0(tabfile,".",sep)
      if(sep=="txt" | sep=="tab") write.table(tab,file=tabfile,quote=FALSE,sep="\t",row.names=FALSE) 
-     if(sep=="csv") write.table(tab,file=tabfile,quote=FALSE,sep=",",row.names=FALSE) 
+     if(sep=="csv") write.table(tab,file=tabfile,quote=FALSE,sep=";",row.names=FALSE) 
      print(paste("Table saved in ",tabfile,sep=""))
   } #end file
   
@@ -408,7 +419,15 @@ efm2 = function(envirfile=NULL,envir=NULL) {
    printTable(reftab)
   }
 
- 
+  showTable = function(df,header="", dec=2, printTable=TRUE) {
+    df = cbind(X=rownames(df),round(df,dec))
+    if(printTable) print(df)
+    dfwin <- gWidgets2::gwindow(header, visible=FALSE)#,height=mwH)
+    tab <- gWidgets2::gdf(df,container=dfwin) #create table
+    gWidgets2::visible(dfwin) <- TRUE
+    gWidgets2::focus(dfwin)
+    
+  }
  
 ########################################################################################################################################## 
   
@@ -445,8 +464,8 @@ efm2 = function(envirfile=NULL,envir=NULL) {
     gWidgets2::gaction('Set variation of randomizer',handler=function(h,...) {  
       setValueUser(what1="optMLE",what2="delta",txt="Set variance of start point randomizer:") 
     }),
-    gWidgets2::gaction('Set max number of iterations',handler=function(h,...) {  
-      setValueUser(what1="optMLE",what2="maxIter",txt="Set max number of iterations:") 
+    gWidgets2::gaction('Set logLik tolerance',handler=function(h,...) {  
+      setValueUser(what1="optMLE",what2="difftol",txt="Set number for tolerance:") 
     }),
     gWidgets2::gaction('Set maximum threads for computation',handler=function(h,...) {  
       setValueUser(what1="optMLE",what2="maxThreads",txt="Set max number of threads to be used in parallelisation:") 
@@ -724,9 +743,11 @@ efm2 = function(envirfile=NULL,envir=NULL) {
     popFreq = euroformix::freqImport(fn,url=FALSE,xml=FALSE)[[1]]
     assign("popFreq",popFreq,envir=mmTK) #assign popFreq
     
-    assign("Freqfile",fn,envir=mmTK) #store filename
+    #STORE FILE NAME
     setAsImported(fn) #set label as imported
     write(fn,file= configList$optFreqfile )   #STORE TO SYSTEM FILE
+    optList$optFreqfile <<- fn
+    assign("optFreqfile",fn,envir=mmTK) #STORE TO PROJECT object
   })
  helptext(tabimportA[1,1],paste0("Choose a frequency file (LRmix/EFM format)."))
  tabimportA[1,2] <- gWidgets2::glabel("none", container=tabimportA) #Create label of whether freq data is imported:
@@ -952,7 +973,8 @@ efm2 = function(envirfile=NULL,envir=NULL) {
       NOC = as.integer(gWidgets2::svalue(tabmodelA1[1,2])) #number of contributors is fixed! 
       checkPosInteger(NOC,"Number of contributors under Hp/Hd")
       nC_hp <- nC_hd <- NOC #number of contributors in model:
-      
+      if(type=="DC") nC_hp = NULL #SET TO NULL TO INDICATE THAT Hp is not to be calculated
+
       condOrder_hp <- condOrder_hd <- rep(0,nRefs)
       knownref_hp <- knownref_hd <- NULL #Typed profiles (known non-contributors)
       for(rsel in refSel) { #traverse each reference
@@ -966,8 +988,6 @@ efm2 = function(envirfile=NULL,envir=NULL) {
         if(type=="EVID") {
           valhp <- as.integer(gWidgets2::svalue(tabmodelA2$hp[row,2])) 
           condOrder_hp[row] <- valhp +  valhp*max(condOrder_hp)
-        } else {
-          nC_hp = NULL #SET TO NULL TO INDICATE THAT Hp is not to be calculated
         }
       }
 	  
@@ -1246,17 +1266,17 @@ efm2 = function(envirfile=NULL,envir=NULL) {
 
   f_showPerMarkerLR = function(h,...) {
     LRi = h$action
-    print("------------LR-perMarker-----------------")
     tab = cbind(LRi,log10(LRi))
     colnames(tab) = c("LR","log10LR")
-    print(tab)
+    showTable(tab,"LR perMarker",2)
   }
   
   #helpfunction to print msg to screen
   doValidMLEModel = function(mlefit,txt="") { #function to get significance level in Validation plot
-    alpha <- as.numeric(getValueUser("Set significance level \nin model validation:",0.01))
-    checkPositive(alpha,"The significance level",strict=TRUE)
-    validMLEmodel2(mlefit,txt,alpha=alpha,createplot = TRUE, verbose = TRUE)
+    alpha <- 0.01 #as.numeric(getValueUser("Set significance level \nin model validation:",0.01))
+    #checkPositive(alpha,"The significance level",strict=TRUE)
+    valid = validMLEmodel2(mlefit,txt,alpha=alpha,createplot = TRUE, verbose = TRUE) #return table
+    return(valid)
   }  
   
 #BEGIN MAIN FUNCTION (wrapper:  
@@ -1274,15 +1294,15 @@ efm2 = function(envirfile=NULL,envir=NULL) {
     f_showParam = function(h,...) {
       if(h$action=="hp") mlefit = set$mlefit_hp
       if(h$action=="hd") mlefit = set$mlefit_hd
-      print(paste0("------------PARAMS (",h$action,")-----------------"))
-      print(mlefit$fit$par2)
+      df = mlefit$fit$par2
+      showTable(df,paste0("PARAMS (",h$action,")"),3)
     }
     
     f_showPerMarkerLogLik = function(h,...) {
       if(h$action=="hp") mlefit = set$mlefit_hp
       if(h$action=="hd") mlefit = set$mlefit_hd
-      print(paste0("------------LogLik (",h$action,")-----------------"))
-      print(cbind(mlefit$logLiki))
+      df = cbind(logLik=mlefit$logLiki)
+      showTable(df,paste0("LogLik per marker (",h$action,")"),2)
     }
     
     #PREPARE CALCULATIONS: DONE IF mlefit_hd is not obtained#
@@ -1306,7 +1326,7 @@ efm2 = function(envirfile=NULL,envir=NULL) {
            kit=par$kit,AT=par$AT,pC=par$pC,lambda=par$lambda,fst=par$fst, 
            mixProp=mod$mixProp,PHexp=mod$PHexp, PHvar=mod$PHvar, DEG=mod$DEG, stuttBW=mod$BWS, stuttFW=mod$FWS,
            minF=minFreq,normalize = as.logical(get("optFreq",envir=mmTK)$normalize),
-           maxIter=opt$maxIter, steptol=opt$steptol, nDone=opt$nDone, maxThreads=opt$maxThreads, delta=opt$delta, seed=seed0,
+           difftol=opt$difftol, steptol=opt$steptol, nDone=opt$nDone, maxThreads=opt$maxThreads, delta=opt$delta, seed=seed0,
            knownRel=hy$knownRel, ibd=hy$ibd)
        } 
        
@@ -1406,7 +1426,13 @@ efm2 = function(envirfile=NULL,envir=NULL) {
      tabmleX2[2,1] =  gWidgets2::gbutton(text="logLik per marker",container=tabmleX2,handler=f_showPerMarkerLogLik,action=hyp)
      
      tabmleX3 = gWidgets2::glayout(spacing=0,container=(tabmleX[3,1] <-gWidgets2::gframe("Further Action",container=tabmleX))) 
-     tabmleX3[1,1] <- gWidgets2::gbutton(text="Model validation",container=tabmleX3,handler=function(h,...) { doValidMLEModel(mlefit,paste0("PP-plot under ",hyp)) } )
+     tabmleX3[1,1] <- gWidgets2::gbutton(text="Model validation",container=tabmleX3,handler=function(h,...) {
+       valid = doValidMLEModel(mlefit,paste0("PP-plot under ",hyp))  #obtain validation table
+       if(hyp=="hp") set$mlefit_hp$nFailed <<- sum(valid$Significant)
+       if(hyp=="hd") set$mlefit_hd$nFailed <<- sum(valid$Significant)
+       calcList[[resID]] <<- set #update set
+       assign("calcList",calcList,envir=mmTK) #store validation results to table
+      } )
      tabmleX3[2,1] <- gWidgets2::gbutton(text="Deconvolution",container=tabmleX3,handler=function(h,...) { doDC(mlefit) }  )
      #tabmleA3[2,1] <- gWidgets2::gbutton(text="MCMC simulation",container=tabmleA3,handler=function(h,...) { doMCMC(mlefit_hd) } )
    }#end function
@@ -1436,10 +1462,15 @@ efm2 = function(envirfile=NULL,envir=NULL) {
         repNames = paste0(rownames(set$modelTable),collapse="/") #get sample name
         modvec = apply(set$modelTable,2,function(x) paste0(x,collapse="/")) #obtain model param overview
         
+        nFailedHp <- nFailedHd <- NA #defualt is no calcs
+        if(!is.null(set$mlefit_hp$nFailed))  nFailedHp = set$mlefit_hp$nFailed
+        if(!is.null(set$mlefit_hd$nFailed))  nFailedHd = set$mlefit_hd$nFailed
+        nFailedTxt = paste0(nFailedHp,"/",nFailedHd)
+        
         LRval = NA
         if(!is.null(set$resLR$LRmle)) LRval = round(log10(set$resLR$LRmle),sig0)
-        newrow = setNames(c(paste0("#",cc),LRval,round(set$mlefit_hd$fit$loglik-nparam,sig0),nparam,modvec,repNames,set$hypTxt)
-                          ,c("Model","log10LR","adjLogLik","nParam",names(modvec),"Evid(s)","Hp","Hd"))
+        newrow = setNames(c(paste0("#",cc),LRval,round(set$mlefit_hd$fit$loglik-nparam,sig0),nparam,modvec,repNames,set$hypTxt,nFailedTxt)
+                          ,c("Model","log10LR","adjLogLik","nParam",names(modvec),"Evid","Hp","Hd","nFailed(hp/hd)"))
         outtab = rbind(outtab, newrow)
       }
       ord = order( as.numeric(outtab[,3]),decreasing = TRUE) #order to show models
@@ -1469,7 +1500,7 @@ efm2 = function(envirfile=NULL,envir=NULL) {
     tabmleD[2,1] = gWidgets2::glabel( names(set$hypTxt)[2]  ,container=tabmleD) #Hd
     
     tabmleD[3,1] = gWidgets2::gbutton("Parameter info",container=tabmleD, handler = function(h,...) {
-        print(set$modelTable) })
+        showTable(set$modelTable,"Parameter sharing info") })
     helptext(tabmleD[3,1],"Show which replicates sharing parameters")
     
     tabmleA = gWidgets2::glayout(spacing=0,container=(tabMLEtmp[2,1] <- gWidgets2::gframe("Estimates under Hd",container=tabMLEtmp,expand=T,fill=T)),expand=T,fill=T) 
@@ -1519,6 +1550,22 @@ efm2 = function(envirfile=NULL,envir=NULL) {
     saveTable(DCtable[], "txt") #save deconvolution results
    }
  }
+  
+  f_saveDCasRef= function(h,...) {
+    topRanked <- get("resDC",envir=mmTK)[[1]] #get deconvolved results (top ranked table)
+    ncol = ncol(topRanked)
+    numRefs = (ncol-1)/3 #number of references to export
+    outtab = NULL #get outtabe
+    for(r in seq_len(numRefs)) {
+      genos = topRanked[,3*(r-1) + 2] #obtain genotypes
+      genos =  t(matrix(unlist(strsplit(genos,"/")),nrow=2)) #obtain alleles per genotyes
+      new = cbind(paste0("C",r),topRanked[,1],genos)
+      outtab = rbind(outtab,new)
+    }
+    colnames(outtab) = c("SampleName","Marker","Allele 1","Allele 2")
+    saveTable(outtab,"csv")
+  }
+  
  refreshTabDC = function(dctype=1) { #1=table1 (top marginal results),2=table2 (joint results), 3=table3 (all marginal results per genotype), 4=table4 (all marginal results per alleles)
    DCtables <- get("resDC",envir=mmTK) #get deconvolved results
    if(!is.null(DCtables)) {
@@ -1535,6 +1582,7 @@ efm2 = function(envirfile=NULL,envir=NULL) {
    refreshTabDC( which(itemvecDC==gWidgets2::svalue(tabDCa[1,2])) )
  })
  tabDCa[2,1] <- gWidgets2::gbutton(text="Save table",container=tabDCa,handler=f_savetableDC)  
+ tabDCa[2,2] <- gWidgets2::gbutton(text="Save profiles",container=tabDCa,handler=f_saveDCasRef)  
  
  #ADD DC TABLE
  DCtable = gWidgets2::gtable(items="",multiple = TRUE,container = tabDCb,expand=T,fill=T)

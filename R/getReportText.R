@@ -19,7 +19,7 @@ getReportText = function(set, envir,sig=2,colps="\t") {
   
   #Helpfunction to print a table
   printTable = function(tab) {
-    tab2 = signif(tab,sig)
+    tab2 = round(tab,sig+1)
     rowNames = rownames(tab) #obtain rownames
     colNames = colnames(tab) #obtain rownames
     
@@ -37,7 +37,7 @@ getReportText = function(set, envir,sig=2,colps="\t") {
   }
   
   printSET <- function(mlefit) { #print settings used
-    txt <- paste0("\n#Markers=",paste0( length(mlefit$prepareC$locNames) ,collapse="/"))
+    txt <- paste0("\nNumber of markers=",paste0( length(mlefit$prepareC$locNames) ,collapse="/"))
     txt <- paste0(txt,"\nReplicate(s)=",paste0(mlefit$prepareC$repNames,collapse="/"))
     txt <- paste0(txt,"\nKit(s)=",paste0(mlefit$kit,collapse="/"))
     txt <- paste0(txt,"\nAnalytical threshold=",paste0(mlefit$AT,collapse="/"))
@@ -60,6 +60,8 @@ getReportText = function(set, envir,sig=2,colps="\t") {
   printFREQ <- function(dat) { #print freqs
     locs = names(dat)
     txt <- paste0("\n\n-------Frequency data---------")
+    freqfile = get("optFreqfile",envir=envir)
+    if(!is.null(freqfile) && !is.na(freqfile)) txt <- paste0(txt,"\nPopulation frequency file: ",  basename(freqfile) ) #store population freq file used (only base name)
     for(loc in locs) {
       freq = dat[[loc]]$freq
       tmp <- paste0(names(freq),"=",freq) #get allele names with freqs
@@ -74,8 +76,6 @@ getReportText = function(set, envir,sig=2,colps="\t") {
   txt <- paste0(txt,"\nUser: ",Sys.getenv("USERNAME"),"\n")
   
   txt <- paste0(txt,"\n-------Settings-------")
-  txt <- paste0(txt,"\nPopulation frequency file: ", basename(get("Freqfile",envir=envir)) ) #store population freq file used (only base name)
-  
   txt <-  paste0(txt,printSET(set$mlefit_hd)) #Print Data and model options under Hd
   
   #Hypotheses:  
@@ -86,11 +86,11 @@ getReportText = function(set, envir,sig=2,colps="\t") {
   #Obtain and show LR results
   res = set$resLR  
   if(!is.null(res) ) {
-    txt0 <- paste0("LR (MLE)=",signif(res$LRmle),sig)
-    txt1 <- paste0("log10LR (MLE)=",signif(log10(res$LRmle)),sig)
-    txt3 <- paste0("log10LR (Upper boundary)=",signif(log10(res$LRupper),sig)) 
+    txt0 <- paste0("LR (MLE)=",signif(res$LRmle,sig+2))
+    txt1 <- paste0("log10LR (MLE)=",round(log10(res$LRmle),sig))
+    txt3 <- paste0("log10LR (Upper boundary)=",round(log10(res$LRupper),sig)) 
     
-    txt5 <- paste0(paste0(names(res$LRi),colps,signif(res$LRi,sig)),collapse="\n")
+    txt5 <- paste0(paste0(names(res$LRi),colps,round(res$LRi,sig)),collapse="\n")
     txt <- paste0(txt,"\n\n-------LR (all markers)------\n",txt0,"\n",txt1,"\n",txt3,"\n")
     txt <- paste0(txt,"\n-------LR (per marker)------\n",txt5,"\n")
     
@@ -98,10 +98,9 @@ getReportText = function(set, envir,sig=2,colps="\t") {
     alpha <- 0.01 #as.numeric(getValueUser("Set significance level \nin model validation:",0.01))
     #checkPositive(alpha,"The significance level",strict=TRUE)
 #    mlefit=set$mlefit_hp
-    validHp = validMLEmodel2(set$mlefit_hp,alpha=alpha,createplot = FALSE,verbose=FALSE)
-    validHd = validMLEmodel2(set$mlefit_hd,alpha=alpha,createplot = FALSE,verbose=FALSE)
-    nFailedHp = sum(validHp$Significant)
-    nFailedHd = sum(validHd$Significant)
+    nFailedHp <- nFailedHd <- NA #defualt is no calcs
+    if(!is.null(set$mlefit_hp$nFailed)) nFailedHp = set$mlefit_hp$nFailed
+    if(!is.null(set$mlefit_hd$nFailed)) nFailedHd = set$mlefit_hd$nFailed
     txtValid = paste0("Under H",c("p","d"),": ",c(nFailedHp,nFailedHd))
     
     txt <- paste0(txt,"\n-------Model validation------\nNumber of fails (signif level=",alpha,"):\n",txtValid[1],"\n",txtValid[2])
